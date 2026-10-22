@@ -85,6 +85,11 @@ def assess_video_with_gemini(
         from google import genai
         from google.genai import errors
         import httpx
+
+        try:
+            from google.genai._gaos.lib.compat_errors import APIError as InteractionsAPIError
+        except ImportError:
+            InteractionsAPIError = errors.APIError
     except ImportError as exc:
         raise AssessmentError(
             "Gemini support is not installed. Install the project requirements and try again."
@@ -186,7 +191,7 @@ def assess_video_with_gemini(
             raise AssessmentError(f"Google Gemini returned an invalid report: {exc}") from exc
     except AssessmentError as exc:
         assessment_error = exc
-    except errors.APIError as exc:
+    except (errors.APIError, InteractionsAPIError) as exc:
         provider_error = exc
     except httpx.TimeoutException as exc:
         provider_error = AssessmentError(
@@ -205,7 +210,7 @@ def assess_video_with_gemini(
                 on_progress("Removing the temporary video copy from Google...")
             try:
                 client.files.delete(name=uploaded_file.name)
-            except errors.APIError as exc:
+            except (errors.APIError, InteractionsAPIError) as exc:
                 cleanup_error = exc
 
     if provider_error is not None:

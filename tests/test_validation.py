@@ -226,6 +226,55 @@ def test_gemini_upload_timeout_returns_actionable_error(tmp_path, monkeypatch):
         assert "try a smaller video" in str(exc)
 
 
+def test_gemini_interaction_server_error_is_reported_and_upload_is_deleted(
+    tmp_path, monkeypatch
+):
+    import httpx
+    from google import genai
+    from google.genai._gaos.lib.compat_errors import InternalServerError
+
+    video_path = tmp_path / "lesson.mp4"
+    video_path.write_bytes(b"test video bytes")
+    calls = {}
+
+    class FakeFiles:
+        def upload(self, **_kwargs):
+            return SimpleNamespace(
+                name="files/uploaded-video",
+                uri="https://example.invalid/video",
+                mime_type="video/mp4",
+                state=SimpleNamespace(name="ACTIVE"),
+            )
+
+        def delete(self, name):
+            calls["deleted_name"] = name
+
+    class FakeInteractions:
+        def create(self, **_kwargs):
+            request = httpx.Request("POST", "https://example.invalid/interactions")
+            response = httpx.Response(500, request=request)
+            raise InternalServerError(
+                "Google Gemini encountered an internal server error.",
+                response=response,
+                body={},
+            )
+
+    class FakeClient:
+        def __init__(self, api_key, http_options):
+            self.files = FakeFiles()
+            self.interactions = FakeInteractions()
+
+    monkeypatch.setattr(genai, "Client", FakeClient)
+
+    try:
+        assess_video_with_gemini(str(video_path), "test-gemini-key")
+        assert False, "A Gemini server error must be shown as an assessment error"
+    except AssessmentError as exc:
+        assert "Google Gemini request failed" in str(exc)
+
+    assert calls["deleted_name"] == "files/uploaded-video"
+
+
 def test_app_shows_only_gemini_video_review():
     from streamlit.testing.v1 import AppTest
 
