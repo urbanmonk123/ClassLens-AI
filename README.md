@@ -35,7 +35,7 @@ Check Google's current [pricing](https://ai.google.dev/gemini-api/docs/pricing),
 
 ## Features
 
-- Upload video files (MP4, MOV, AVI, MKV, WebM).
+- Upload video files up to 250 MB (MP4, MOV, AVI, MKV, WebM).
 - Upload one video at a time; choosing another video clears the previous assessment.
 - Direct Gemini analysis of video and embedded audio.
 - Structured assessment with rubric scores, evidence, strengths, improvements, and limitations.

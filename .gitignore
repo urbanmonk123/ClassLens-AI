@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-.streamlit/
+.streamlit/*
+!.streamlit/config.toml
 .env
 .DS_Store
